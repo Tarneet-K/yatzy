@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Yatzy – Assignment 1</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="container">
+    <h1>Yatzy — Single Player</h1>
+    <p id="status" aria-live="polite">Press Roll to start (up to 3 rolls per turn).</p>
+  </header>
+
+  <main class="container layout">
+    <!-- Dice Panel -->
+    <section class="card dice-panel">
+      <h2>Dice</h2>
+      <div id="diceRow" class="dice-row" role="group" aria-label="Dice"></div>
+
+      <div class="controls">
+        <button id="rollBtn" class="btn">Roll</button>
+        <button id="endTurnBtn" class="btn btn-secondary">End Turn</button>
+        <button id="endGameBtn" class="btn btn-danger">End Game</button>
+        <span class="meta">Rolls this turn: <strong id="rollCount">0</strong>/3</span>
+      </div>
+    </section>
+
+    <!-- Scorecard Panel -->
+    <section class="card scorecard">
+      <h2>Scorecard</h2>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Score</th></tr>
+        </thead>
+        <tbody id="scoreBody">
+          <!-- Upper -->
+          <tr data-cat="ones"><td>Ones</td><td class="val"></td></tr>
+          <tr data-cat="twos"><td>Twos</td><td class="val"></td></tr>
+          <tr data-cat="threes"><td>Threes</td><td class="val"></td></tr>
+          <tr data-cat="fours"><td>Fours</td><td class="val"></td></tr>
+          <tr data-cat="fives"><td>Fives</td><td class="val"></td></tr>
+          <tr data-cat="sixes"><td>Sixes</td><td class="val"></td></tr>
+          <tr class="divider"><td colspan="2"></td></tr>
+          <!-- Lower -->
+          <tr data-cat="threeKind"><td>Three of a Kind</td><td class="val"></td></tr>
+          <tr data-cat="fourKind"><td>Four of a Kind</td><td class="val"></td></tr>
+          <tr data-cat="fullHouse"><td>Full House</td><td class="val"></td></tr>
+          <tr data-cat="smallStraight"><td>Small Straight (1–5 or 2–6)</td><td class="val"></td></tr>
+          <tr data-cat="largeStraight"><td>Large Straight (1–5 or 2–6 in order)</td><td class="val"></td></tr>
+          <tr data-cat="chance"><td>Chance</td><td class="val"></td></tr>
+          <tr data-cat="yatzy"><td>Yatzy (5 of a kind)</td><td class="val"></td></tr>
+        </tbody>
+        <tfoot>
+          <tr class="total"><th>Total</th><th id="totalScore">0</th></tr>
+        </tfoot>
+      </table>
+      <p class="hint">Click a category to score using the current dice. Each category can be used once.</p>
+    </section>
+  </main>
+
+  <!-- Game Over Modal -->
+  <div id="gameModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Game Over</h2>
+      <p id="finalMessage"></p>
+      <div class="modal-actions">
+        <button id="newGameBtn" class="btn">New Game</button>
+        <button id="closeModalBtn" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="container">
+    <small class="meta">Assignment 1 – Yatzy</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
