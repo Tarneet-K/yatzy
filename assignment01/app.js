@@ -1,243 +1,151 @@
-// ====== Assignment 1 Yatzy (single player) ======
+// Yatzy – single player (no upper/bonus rows), dice visible from start
 
-const DICE_COUNT = 5;
-const MAX_ROLLS = 3;
+(() => {
+  // DOM
+  const diceRow   = document.getElementById("diceRow");
+  const rollBtn   = document.getElementById("rollBtn");
+  const endTurnBtn= document.getElementById("endTurnBtn");
+  const endGameBtn= document.getElementById("endGameBtn");
+  const rollInfo  = document.getElementById("rollInfo");
+  const scoreTable= document.getElementById("scoreTable");
+  const totalCell = document.getElementById("grandTotal");
 
-let dice = Array(DICE_COUNT).fill(1);
-let held = Array(DICE_COUNT).fill(false);
-let rollsThisTurn = 0;
-let scoredCategories = {}; // { catName: number }
-let totalScore = 0;
-let gameOver = false;
+  // State
+  const categories = [
+    "ones","twos","threes","fours","fives","sixes",
+    "threeKind","fourKind","fullHouse","smallStraight",
+    "largeStraight","chance","yatzy"
+  ];
 
-const statusEl    = document.getElementById('status');
-const diceRow     = document.getElementById('diceRow');
-const rollBtn     = document.getElementById('rollBtn');
-const endTurnBtn  = document.getElementById('endTurnBtn');
-const endGameBtn  = document.getElementById('endGameBtn');
-const rollCountEl = document.getElementById('rollCount');
-const scoreBody   = document.getElementById('scoreBody');
-const totalEl     = document.getElementById('totalScore');
+  let dice  = [1,1,1,1,1];            // visible immediately
+  let held  = [false,false,false,false,false];
+  let rollsLeft = 3;
+  let scored    = {};
+  let suggested = {};
 
-const gameModal     = document.getElementById('gameModal');
-const finalMsgEl    = document.getElementById('finalMessage');
-const newGameBtn    = document.getElementById('newGameBtn');
-const closeModalBtn = document.getElementById('closeModalBtn');
+  const FACE = ["","⚀","⚁","⚂","⚃","⚄","⚅"];
 
-// ---- UI init
-renderDice();
-attachScoreRowHandlers();
-updateStatus('Press Roll to start (up to 3 rolls per turn).');
+  // Helpers
+  const rand = () => 1 + Math.floor(Math.random()*6);
+  const sum  = arr => arr.reduce((a,b)=>a+b,0);
+  const cnts = () => {
+    const c = Array(7).fill(0);
+    for(const v of dice) c[v]++; return c;
+  };
 
-rollBtn.addEventListener('click', () => {
-  if (gameOver) return;
-  if (rollsThisTurn >= MAX_ROLLS) {
-    updateStatus('You have used all 3 rolls. Choose a category or end turn.');
-    return;
+  function computeSuggestions(){
+    const c = cnts();
+    const s = {};
+    s.ones   = c[1]*1; s.twos   = c[2]*2; s.threes = c[3]*3;
+    s.fours  = c[4]*4; s.fives  = c[5]*5; s.sixes  = c[6]*6;
+
+    s.threeKind = c.some(x=>x>=3) ? sum(dice) : 0;
+    s.fourKind  = c.some(x=>x>=4) ? sum(dice) : 0;
+    s.fullHouse = (c.includes(3) && c.includes(2)) ? 25 : 0;
+
+    const has = i => c[i]>0;
+    const small = (has(1)&&has(2)&&has(3)&&has(4)) ||
+                  (has(2)&&has(3)&&has(4)&&has(5)) ||
+                  (has(3)&&has(4)&&has(5)&&has(6));
+    s.smallStraight = small ? 30 : 0;
+
+    const large = (has(1)&&has(2)&&has(3)&&has(4)&&has(5)) ||
+                  (has(2)&&has(3)&&has(4)&&has(5)&&has(6));
+    s.largeStraight = large ? 40 : 0;
+
+    s.chance = sum(dice);
+    s.yatzy  = c.some(x=>x===5) ? 50 : 0;
+
+    suggested = s;
   }
-  rollUnheldDice();
-  rollsThisTurn++;
-  rollCountEl.textContent = rollsThisTurn;
-  updateStatus('Click dice to hold/unhold. Click a category to score.');
-});
 
-endTurnBtn.addEventListener('click', () => {
-  if (gameOver) return;
-  if (rollsThisTurn === 0) {
-    updateStatus('You haven’t rolled yet. Press Roll first.');
-    return;
+  function renderDice(){
+    // Dice buttons already exist in HTML; just update faces/held
+    diceRow.querySelectorAll(".die").forEach((el,i)=>{
+      el.textContent = FACE[dice[i]];
+      el.classList.toggle("held", held[i]);
+    });
   }
-  updateStatus('Choose a category to score, or press End Game.');
-});
 
-endGameBtn.addEventListener('click', () => {
-  if (gameOver) return;
-  const ok = confirm('End the game now? Your current total will be final.');
-  if (ok) endGame({ reason: 'manual' });
-});
-
-newGameBtn.addEventListener('click', newGame);
-closeModalBtn.addEventListener('click', () => gameModal.hidden = true);
-
-// ---- Dice helpers
-function rollUnheldDice() {
-  for (let i = 0; i < DICE_COUNT; i++) {
-    if (!held[i]) {
-      dice[i] = Math.floor(Math.random() * 6) + 1;
-    }
+  function updateScoreTable(){
+    categories.forEach(cat=>{
+      const row  = scoreTable.querySelector(`tr[data-cat="${cat}"]`);
+      if(!row) return;
+      const cell = row.querySelector("td.r");
+      if (scored[cat] !== undefined){
+        cell.textContent = scored[cat];
+        row.classList.add("fixed");
+      } else {
+        cell.textContent = (rollsLeft < 3) ? (suggested[cat] ?? "—") : "—";
+        row.classList.remove("fixed");
+      }
+    });
+    totalCell.textContent = Object.values(scored).reduce((a,b)=>a+b,0);
   }
-  renderDice();
-}
 
-function renderDice() {
-  diceRow.innerHTML = '';
-  dice.forEach((val, i) => {
-    const d = document.createElement('button');
-    d.className = 'die' + (held[i] ? ' held' : '');
-    d.type = 'button';
-    d.setAttribute('aria-pressed', held[i] ? 'true' : 'false');
-    d.title = held[i] ? 'Held' : 'Click to hold';
-    d.textContent = face(val);
-    d.addEventListener('click', () => toggleHold(i));
-    diceRow.appendChild(d);
+  function updateRollInfo(){
+    rollInfo.textContent = `Rolls this turn: ${3-rollsLeft}/3`;
+    rollBtn.disabled = rollsLeft===0;
+  }
+
+  function nextTurn(){
+    held = [false,false,false,false,false];
+    // Keep dice visible but reset to ⚀ to avoid random clutter
+    dice = [1,1,1,1,1];
+    rollsLeft = 3;
+    computeSuggestions();
+    renderDice();
+    updateRollInfo();
+    updateScoreTable();
+  }
+
+  // Actions
+  function roll(){
+    if(rollsLeft<=0) return;
+    dice = dice.map((v,i)=> held[i] ? v : rand());
+    rollsLeft--;
+    computeSuggestions();
+    renderDice();
+    updateRollInfo();
+    updateScoreTable();
+  }
+
+  function toggleHold(idx){
+    if(rollsLeft===3) return; // you can only hold after first roll
+    held[idx] = !held[idx];
+    renderDice();
+  }
+
+  function score(cat){
+    if(rollsLeft===3) return;           // must roll first
+    if(scored[cat]!==undefined) return; // already taken
+    scored[cat] = suggested[cat] ?? 0;
+    nextTurn();
+  }
+
+  function endTurn(){ nextTurn(); }
+  function endGame(){ scored={}; nextTurn(); }
+
+  // Events
+  rollBtn.addEventListener("click", roll);
+  endTurnBtn.addEventListener("click", endTurn);
+  endGameBtn.addEventListener("click", endGame);
+
+  diceRow.addEventListener("click", e=>{
+    const btn = e.target.closest(".die");
+    if(!btn) return;
+    toggleHold(+btn.dataset.index);
   });
-}
 
-function toggleHold(i) {
-  if (gameOver) return;
-  if (rollsThisTurn === 0) return; // only after first roll
-  held[i] = !held[i];
-  renderDice();
-}
-
-function face(n) {
-  const map = ['⚀','⚁','⚂','⚃','⚄','⚅'];
-  return map[n-1] ?? String(n);
-}
-
-function updateStatus(msg) {
-  statusEl.textContent = msg;
-}
-
-// ---- Scorecard interactions
-function attachScoreRowHandlers() {
-  [...scoreBody.querySelectorAll('tr')].forEach(row => {
-    const cat = row.dataset.cat;
-    if (!cat) return; // divider rows
-    row.addEventListener('click', () => scoreCategory(cat, row));
+  scoreTable.addEventListener("click", e=>{
+    const row = e.target.closest("tr[data-cat]");
+    if(!row) return;
+    score(row.getAttribute("data-cat"));
   });
-}
 
-function scoreCategory(cat, row) {
-  if (gameOver) return;
-  // prevent re-scoring
-  if (scoredCategories[cat] != null) {
-    updateStatus('That category is already scored.');
-    return;
-  }
-  // must have rolled
-  if (rollsThisTurn === 0) {
-    updateStatus('Roll first, then choose a category.');
-    return;
-  }
-
-  const v = computeScore(cat, dice.slice());
-  scoredCategories[cat] = v;
-  totalScore += v;
-
-  row.classList.add('scored');
-  row.querySelector('.val').textContent = v;
-
-  // next turn
-  newTurn();
-}
-
-function newTurn() {
-  dice = Array(DICE_COUNT).fill(1);
-  held = Array(DICE_COUNT).fill(false);
-  rollsThisTurn = 0;
-  rollCountEl.textContent = '0';
-  totalEl.textContent = totalScore;
+  // Initial paint (dice are already visible as ⚀ from HTML)
+  computeSuggestions();
   renderDice();
-
-  // if all categories (13) are scored -> end
-  if (Object.keys(scoredCategories).length >= 13) {
-    endGame({ reason: 'maxCategories' });
-  } else {
-    updateStatus('New turn. Press Roll.');
-  }
-}
-
-// ---- Scoring logic
-function computeScore(cat, arr) {
-  const counts = countVals(arr);
-  const sum = arr.reduce((a,b)=>a+b,0);
-  switch (cat) {
-    // Upper section
-    case 'ones':   return counts[1] * 1;
-    case 'twos':   return counts[2] * 2;
-    case 'threes': return counts[3] * 3;
-    case 'fours':  return counts[4] * 4;
-    case 'fives':  return counts[5] * 5;
-    case 'sixes':  return counts[6] * 6;
-
-    // Lower section
-    case 'threeKind':    return hasOfAKind(counts,3) ? sum : 0;
-    case 'fourKind':     return hasOfAKind(counts,4) ? sum : 0;
-    case 'fullHouse':    return isFullHouse(counts) ? 25 : 0;
-    case 'smallStraight':return isSmallStraight(arr) ? 30 : 0;
-    case 'largeStraight':return isLargeStraight(arr) ? 40 : 0;
-    case 'chance':       return sum;
-    case 'yatzy':        return hasOfAKind(counts,5) ? 50 : 0;
-    default: return 0;
-  }
-}
-function countVals(arr){
-  const c = {1:0,2:0,3:0,4:0,5:0,6:0};
-  for (const v of arr) c[v]++;
-  return c;
-}
-function hasOfAKind(counts, n){
-  return Object.values(counts).some(v => v>=n);
-}
-function isFullHouse(counts){
-  const vals = Object.values(counts);
-  return vals.includes(3) && vals.includes(2);
-}
-function isSmallStraight(arr){
-  const u = [...new Set(arr)].sort((a,b)=>a-b).join('');
-  return u.includes('12345') || u.includes('23456');
-}
-function isLargeStraight(arr){
-  const s = arr.slice().sort((a,b)=>a-b).join('');
-  return s === '12345' || s === '23456';
-}
-
-// ---- End game & modal
-function endGame({ reason = 'manual' } = {}) {
-  gameOver = true;
-
-  rollBtn.disabled = true;
-  endTurnBtn.disabled = true;
-  endGameBtn.disabled = true;
-  [...document.querySelectorAll('.die')].forEach(d => d.disabled = true);
-  [...scoreBody.querySelectorAll('tr')].forEach(tr => tr.style.pointerEvents='none');
-
-  const used = Object.keys(scoredCategories).length;
-  const msg = reason === 'maxCategories'
-    ? `You scored all ${used} categories.`
-    : `You ended the game.`;
-  finalMsgEl.innerHTML = `${msg}<br><strong>Your final score: ${totalScore}</strong>`;
-  gameModal.hidden = false;
-
-  updateStatus('Game over.');
-}
-
-function newGame() {
-  // reset all state
-  dice = Array(DICE_COUNT).fill(1);
-  held = Array(DICE_COUNT).fill(false);
-  rollsThisTurn = 0;
-  scoredCategories = {};
-  totalScore = 0;
-  gameOver = false;
-
-  // re-enable UI
-  rollBtn.disabled = false;
-  endTurnBtn.disabled = false;
-  endGameBtn.disabled = false;
-  [...scoreBody.querySelectorAll('tr')].forEach(tr => {
-    tr.classList.remove('scored');
-    const cell = tr.querySelector('.val');
-    if (cell) cell.textContent = '';
-    tr.style.pointerEvents = '';
-  });
-  [...document.querySelectorAll('.die')].forEach(d => d.disabled = false);
-
-  rollCountEl.textContent = '0';
-  totalEl.textContent = '0';
-  gameModal.hidden = true;
-
-  renderDice();
-  updateStatus('New game — Press Roll to start.');
-}
+  updateRollInfo();
+  updateScoreTable();
+})();
