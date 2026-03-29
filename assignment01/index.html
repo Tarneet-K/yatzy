@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Yatzy — Single Player</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <h1 class="title">Yatzy — Single Player</h1>
+
+    <section class="grid">
+      <!-- Dice panel -->
+      <div class="panel panel--dice">
+        <h2>Dice</h2>
+
+        <div id="diceRow" class="dice-row">
+          <!-- Dice are pre-rendered so they’re visible even before JS runs -->
+          <button class="die" data-index="0" aria-label="die 1">⚀</button>
+          <button class="die" data-index="1" aria-label="die 2">⚀</button>
+          <button class="die" data-index="2" aria-label="die 3">⚀</button>
+          <button class="die" data-index="3" aria-label="die 4">⚀</button>
+          <button class="die" data-index="4" aria-label="die 5">⚀</button>
+        </div>
+
+        <div class="controls">
+          <button id="rollBtn" class="btn">Roll</button>
+          <button id="endTurnBtn" class="btn btn--ghost">End Turn</button>
+          <button id="endGameBtn" class="btn btn--ghost">End Game</button>
+          <span id="rollInfo" class="roll-info">Rolls this turn: 0/3</span>
+        </div>
+      </div>
+
+      <!-- Scorecard -->
+      <div class="panel">
+        <h2>Scorecard</h2>
+        <table id="scoreTable" class="score">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="r">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-cat="ones"><td>Ones</td><td class="r">—</td></tr>
+            <tr data-cat="twos"><td>Twos</td><td class="r">—</td></tr>
+            <tr data-cat="threes"><td>Threes</td><td class="r">—</td></tr>
+            <tr data-cat="fours"><td>Fours</td><td class="r">—</td></tr>
+            <tr data-cat="fives"><td>Fives</td><td class="r">—</td></tr>
+            <tr data-cat="sixes"><td>Sixes</td><td class="r">—</td></tr>
+
+            <tr data-cat="threeKind"><td>Three of a kind</td><td class="r">—</td></tr>
+            <tr data-cat="fourKind"><td>Four of a kind</td><td class="r">—</td></tr>
+            <tr data-cat="fullHouse"><td>Full House</td><td class="r">—</td></tr>
+            <tr data-cat="smallStraight"><td>Small straight</td><td class="r">—</td></tr>
+            <tr data-cat="largeStraight"><td>Large straight</td><td class="r">—</td></tr>
+            <tr data-cat="chance"><td>Chance</td><td class="r">—</td></tr>
+            <tr data-cat="yatzy"><td>Yatzy</td><td class="r">—</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row"><td>Total</td><td class="r" id="grandTotal">0</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
